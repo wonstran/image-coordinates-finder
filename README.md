@@ -1,4 +1,4 @@
-# Coordinate Drawer
+# Image Coordinate Finder
 
 Interactive web application for drawing shapes on images and exporting coordinates.
 
@@ -24,6 +24,8 @@ npm run dev
 ```
 
 3. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+    Or access [https://its.cutr.usf.edu/image](https://its.cutr.usf.edu/image)
 
 ## Usage
 
