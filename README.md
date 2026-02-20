@@ -25,7 +25,9 @@ npm run dev
 
 3. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-    Or access [https://its.cutr.usf.edu/image](https://its.cutr.usf.edu/image)
+## Deloyed Online Tool 
+
+ Access [https://its.cutr.usf.edu/image](https://its.cutr.usf.edu/image)
 
 ## Usage
 
