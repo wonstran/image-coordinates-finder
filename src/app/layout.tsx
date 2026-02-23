@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Coordinate Drawer - Draw Shapes on Images',
+  title: 'Image Coordinates Finder - ver. 0.2',
   description: 'Interactive drawing application for drawing shapes on images and exporting coordinates',
 };
 

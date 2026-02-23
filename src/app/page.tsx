@@ -28,6 +28,8 @@ export default function Home() {
   const [imageHeight, setImageHeight] = useState(600);
   const [imageData, setImageData] = useState<string | null>(null);
   const [showImageUpload, setShowImageUpload] = useState(true);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+  const [zoomScale, setZoomScale] = useState(1);
 
   const saveToHistory = useCallback((newShapes: Shape[]) => {
     setPast((prev) => [...prev, shapes]);
@@ -136,7 +138,10 @@ export default function Home() {
               <circle cx="17" cy="17" r="1.5" fill="#93C5FD"/>
             </svg>
           </div>
-          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Image Coordinates Finder</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Image Coordinates Finder <span className="text-gray-400 text-lg">ver. 0.2</span></h1>
+        </div>
+        <div className="absolute left-1/2 transform -translate-x-1/2 bg-white/90 px-4 py-1 text-sm border border-gray-300 rounded font-mono">
+          X: {mousePos ? Math.round(mousePos.x) : 0} &nbsp; Y: {mousePos ? Math.round(mousePos.y) : 0}
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -180,21 +185,52 @@ export default function Home() {
                 <ImageUpload onImageLoad={handleImageLoad} />
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-1">
-                <DrawingCanvas
-                  shapes={shapes}
-                  activeTool={activeTool}
-                  strokeColor={strokeColor}
-                  strokeWidth={strokeWidth}
-                  selectedId={selectedId}
-                  imageData={imageData}
-                  imageWidth={Math.min(imageWidth, 1200)}
-                  imageHeight={Math.min(imageHeight, 800)}
-                  onShapeAdd={handleShapeAdd}
-                  onShapeUpdate={handleShapeUpdate}
-                  onShapeSelect={setSelectedId}
-                  labelColor={labelColor}
-                />
+              <div className="flex items-center gap-4">
+                <div className="bg-white shadow-sm border border-gray-200 p-1">
+                  <DrawingCanvas
+                    shapes={shapes}
+                    activeTool={activeTool}
+                    strokeColor={strokeColor}
+                    strokeWidth={strokeWidth}
+                    selectedId={selectedId}
+                    imageData={imageData}
+                    imageWidth={Math.min(imageWidth, 1200)}
+                    imageHeight={Math.min(imageHeight, 800)}
+                    onShapeAdd={handleShapeAdd}
+                    onShapeUpdate={handleShapeUpdate}
+                    onShapeSelect={setSelectedId}
+                    onMouseMove={setMousePos}
+                    zoomScale={zoomScale}
+                    onZoomChange={setZoomScale}
+                    labelColor={labelColor}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => setZoomScale(prev => Math.min(5, prev * 1.2))}
+                    className="w-8 h-8 bg-white border border-gray-300 rounded hover:bg-gray-100 flex items-center justify-center text-lg"
+                    title="Zoom In"
+                  >
+                    +
+                  </button>
+                  <button
+                    onClick={() => setZoomScale(prev => Math.max(0.1, prev / 1.2))}
+                    className="w-8 h-8 bg-white border border-gray-300 rounded hover:bg-gray-100 flex items-center justify-center text-lg"
+                    title="Zoom Out"
+                  >
+                    -
+                  </button>
+                  <button
+                    onClick={() => setZoomScale(1)}
+                    className="w-8 h-8 bg-white border border-gray-300 rounded hover:bg-gray-100 flex items-center justify-center text-xs font-bold"
+                    title="Reset Zoom"
+                  >
+                    1:1
+                  </button>
+                  <span className="bg-white px-2 py-1 text-xs border border-gray-300 rounded text-center">
+                    {Math.round(zoomScale * 100)}%
+                  </span>
+                </div>
               </div>
             )}
           </div>

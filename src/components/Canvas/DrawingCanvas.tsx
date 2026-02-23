@@ -17,6 +17,9 @@ interface DrawingCanvasProps {
   onShapeAdd: (shape: any) => void;
   onShapeUpdate: (id: string, updates: Partial<Shape>) => void;
   onShapeSelect: (id: string | null) => void;
+  onMouseMove?: (pos: { x: number; y: number } | null) => void;
+  zoomScale?: number;
+  onZoomChange?: (scale: number) => void;
   onCancel?: () => void;
   labelColor?: 'black' | 'white';
 }
@@ -33,6 +36,9 @@ export function DrawingCanvas({
   onShapeAdd,
   onShapeUpdate,
   onShapeSelect,
+  onMouseMove,
+  zoomScale,
+  onZoomChange,
   onCancel,
   labelColor = 'white',
 }: DrawingCanvasProps) {
@@ -47,9 +53,15 @@ export function DrawingCanvas({
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   
   // Zoom and pan state
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(zoomScale ?? 1);
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
+
+  useEffect(() => {
+    if (zoomScale !== undefined) {
+      setScale(zoomScale);
+    }
+  }, [zoomScale]);
 
   const handleWheel = useCallback((e: any) => {
     e.evt.preventDefault();
@@ -80,17 +92,22 @@ export function DrawingCanvas({
   }, [scale, stagePos]);
 
   const zoomIn = useCallback(() => {
-    setScale(prev => Math.min(5, prev * 1.2));
-  }, []);
+    const newScale = Math.min(5, scale * 1.2);
+    setScale(newScale);
+    onZoomChange?.(newScale);
+  }, [scale, onZoomChange]);
 
   const zoomOut = useCallback(() => {
-    setScale(prev => Math.max(0.1, prev / 1.2));
-  }, []);
+    const newScale = Math.max(0.1, scale / 1.2);
+    setScale(newScale);
+    onZoomChange?.(newScale);
+  }, [scale, onZoomChange]);
 
   const resetZoom = useCallback(() => {
     setScale(1);
     setStagePos({ x: 0, y: 0 });
-  }, []);
+    onZoomChange?.(1);
+  }, [onZoomChange]);
 
   // Handle Escape to cancel current drawing
   useEffect(() => {
@@ -302,6 +319,7 @@ export function DrawingCanvas({
     (e: any) => {
       const pos = getPointerPosition();
       setMousePos(pos);
+      onMouseMove?.(pos);
 
       if (!isDrawing && tempPoints.length === 0) return;
 
@@ -652,37 +670,7 @@ export function DrawingCanvas({
   };
 
   return (
-    <div className="relative border-2 border-gray-300 rounded-lg overflow-hidden bg-white">
-      {/* Zoom Controls */}
-      <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
-        <button
-          onClick={zoomIn}
-          className="w-8 h-8 bg-white border border-gray-300 rounded hover:bg-gray-100 flex items-center justify-center text-lg"
-          title="Zoom In"
-        >
-          +
-        </button>
-        <button
-          onClick={zoomOut}
-          className="w-8 h-8 bg-white border border-gray-300 rounded hover:bg-gray-100 flex items-center justify-center text-lg"
-          title="Zoom Out"
-        >
-          -
-        </button>
-        <button
-          onClick={resetZoom}
-          className="w-8 h-8 bg-white border border-gray-300 rounded hover:bg-gray-100 flex items-center justify-center text-xs font-bold"
-          title="Reset Zoom"
-        >
-          1:1
-        </button>
-      </div>
-      
-      {/* Scale indicator */}
-      <div className="absolute bottom-2 right-2 z-10 bg-white px-2 py-1 text-xs border border-gray-300 rounded">
-        {Math.round(scale * 100)}%
-      </div>
-
+    <div className="relative border-2 border-gray-300 overflow-hidden bg-white">
       <Stage
         ref={stageRef}
         width={imageWidth}
@@ -695,6 +683,7 @@ export function DrawingCanvas({
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
+        onMouseLeave={() => { setMousePos(null); onMouseMove?.(null); }}
         onDblClick={handleDoubleClick}
         onTouchStart={handleMouseDown}
         onTouchMove={handleMouseMove}
