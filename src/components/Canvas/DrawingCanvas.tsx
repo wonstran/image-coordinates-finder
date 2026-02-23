@@ -14,12 +14,15 @@ interface DrawingCanvasProps {
   imageData: string | null;
   imageWidth: number;
   imageHeight: number;
+  originalImageWidth?: number;
+  originalImageHeight?: number;
   onShapeAdd: (shape: any) => void;
   onShapeUpdate: (id: string, updates: Partial<Shape>) => void;
   onShapeSelect: (id: string | null) => void;
   onMouseMove?: (pos: { x: number; y: number } | null) => void;
   zoomScale?: number;
   onZoomChange?: (scale: number) => void;
+  onStageRef?: (ref: React.RefObject<any>) => void;
   onCancel?: () => void;
   labelColor?: 'black' | 'white';
 }
@@ -33,18 +36,27 @@ export function DrawingCanvas({
   imageData,
   imageWidth,
   imageHeight,
+  originalImageWidth,
+  originalImageHeight,
   onShapeAdd,
   onShapeUpdate,
   onShapeSelect,
   onMouseMove,
   zoomScale,
   onZoomChange,
+  onStageRef,
   onCancel,
   labelColor = 'white',
 }: DrawingCanvasProps) {
   const stageRef = useRef<any>(null);
   const layerRef = useRef<any>(null);
   const transformerRef = useRef<any>(null);
+  
+  useEffect(() => {
+    if (stageRef.current && onStageRef) {
+      onStageRef(stageRef);
+    }
+  }, [onStageRef]);
   
   const [image] = useImage(imageData || '', 'anonymous');
   const [isDrawing, setIsDrawing] = useState(false);
@@ -62,6 +74,61 @@ export function DrawingCanvas({
       setScale(zoomScale);
     }
   }, [zoomScale]);
+
+  const scaleX = originalImageWidth ? originalImageWidth / imageWidth : 1;
+  const scaleY = originalImageHeight ? originalImageHeight / imageHeight : 1;
+  const displayScaleX = scaleX ? 1 / scaleX : 1;
+  const displayScaleY = scaleY ? 1 / scaleY : 1;
+
+  const toOriginalCoords = useCallback((x: number, y: number) => ({
+    x: Math.round(x * scaleX),
+    y: Math.round(y * scaleY),
+  }), [scaleX, scaleY]);
+
+  const toOriginalPoints = useCallback((points: number[]) => {
+    return points.map((p, i) => i % 2 === 0 ? Math.round(p * scaleX) : Math.round(p * scaleY));
+  }, [scaleX, scaleY]);
+
+  const toDisplayCoords = useCallback((x: number, y: number) => ({
+    x: x * displayScaleX,
+    y: y * displayScaleY,
+  }), [displayScaleX, displayScaleY]);
+
+  const toDisplayPoints = useCallback((points: number[]) => {
+    return points.map((p, i) => i % 2 === 0 ? p * displayScaleX : p * displayScaleY);
+  }, [displayScaleX, displayScaleY]);
+
+  const addShapeWithCoords = useCallback((shape: any) => {
+    const convertedShape = { ...shape };
+    
+    if (shape.type === 'point') {
+      const coords = toOriginalCoords(shape.x, shape.y);
+      convertedShape.x = coords.x;
+      convertedShape.y = coords.y;
+    } else if (shape.type === 'line' || shape.type === 'rawline') {
+      convertedShape.points = toOriginalPoints(shape.points);
+    } else if (shape.type === 'polyline' || shape.type === 'polygon') {
+      convertedShape.points = toOriginalPoints(shape.points);
+    } else if (shape.type === 'rectangle') {
+      const coords = toOriginalCoords(shape.x, shape.y);
+      convertedShape.x = coords.x;
+      convertedShape.y = coords.y;
+      convertedShape.width = Math.round(shape.width * scaleX);
+      convertedShape.height = Math.round(shape.height * scaleY);
+    } else if (shape.type === 'circle') {
+      const coords = toOriginalCoords(shape.x, shape.y);
+      convertedShape.x = coords.x;
+      convertedShape.y = coords.y;
+      convertedShape.radius = Math.round(shape.radius * ((scaleX + scaleY) / 2));
+    }
+    
+    onShapeAdd(convertedShape);
+  }, [toOriginalCoords, toOriginalPoints, scaleX, scaleY, onShapeAdd]);
+
+  const updateMousePos = useCallback((pos: { x: number; y: number }) => {
+    const originalCoords = toOriginalCoords(pos.x, pos.y);
+    onMouseMove?.(originalCoords);
+  }, [toOriginalCoords, onMouseMove]);
 
   const handleWheel = useCallback((e: any) => {
     e.evt.preventDefault();
@@ -123,7 +190,7 @@ export function DrawingCanvas({
         // Finish polyline/polygon on Enter
         if (tempPoints.length >= 4) {
           if (activeTool === 'polyline') {
-            onShapeAdd({
+            addShapeWithCoords({
               type: 'polyline',
               points: tempPoints,
               strokeColor,
@@ -132,7 +199,7 @@ export function DrawingCanvas({
             setTempPoints([]);
             setIsDrawing(false);
           } else if (activeTool === 'polygon') {
-            onShapeAdd({
+            addShapeWithCoords({
               type: 'polygon',
               points: tempPoints,
               strokeColor,
@@ -146,7 +213,7 @@ export function DrawingCanvas({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentShape, tempPoints, onCancel, activeTool, strokeColor, strokeWidth, onShapeAdd]);
+  }, [currentShape, tempPoints, onCancel, activeTool, strokeColor, strokeWidth, addShapeWithCoords]);
 
   useEffect(() => {
     if (transformerRef.current && layerRef.current) {
@@ -190,7 +257,7 @@ export function DrawingCanvas({
 
       switch (activeTool) {
         case 'point': {
-          onShapeAdd({
+          addShapeWithCoords({
             type: 'point',
             x: pos.x,
             y: pos.y,
@@ -235,7 +302,7 @@ export function DrawingCanvas({
               ...currentShape,
               points: updatedPoints,
             };
-            onShapeAdd(finalShape);
+            addShapeWithCoords(finalShape);
             setCurrentShape(null);
             setIsDrawing(false);
           }
@@ -272,7 +339,7 @@ export function DrawingCanvas({
               height,
             };
             if (Math.abs(width) > 2 && Math.abs(height) > 2) {
-              onShapeAdd(finalShape);
+              addShapeWithCoords(finalShape);
             }
             setCurrentShape(null);
             setIsDrawing(false);
@@ -303,7 +370,7 @@ export function DrawingCanvas({
               radius,
             };
             if (radius > 2) {
-              onShapeAdd(finalShape);
+              addShapeWithCoords(finalShape);
             }
             setCurrentShape(null);
             setIsDrawing(false);
@@ -312,14 +379,14 @@ export function DrawingCanvas({
         }
       }
     },
-    [activeTool, strokeColor, strokeWidth, getPointerPosition, onShapeAdd, onShapeSelect, currentShape]
+    [activeTool, strokeColor, strokeWidth, getPointerPosition, addShapeWithCoords, onShapeSelect, currentShape]
   );
 
   const handleMouseMove = useCallback(
     (e: any) => {
       const pos = getPointerPosition();
       setMousePos(pos);
-      onMouseMove?.(pos);
+      updateMousePos(pos);
 
       if (!isDrawing && tempPoints.length === 0) return;
 
@@ -383,16 +450,16 @@ export function DrawingCanvas({
     }
 
     if (currentShape.type === 'rawline' && currentShape.points.length >= 4) {
-      onShapeAdd(currentShape);
+      addShapeWithCoords(currentShape);
     }
 
     setCurrentShape(null);
     setIsDrawing(false);
-  }, [isDrawing, currentShape, onShapeAdd]);
+  }, [isDrawing, currentShape, addShapeWithCoords]);
 
   const handleDoubleClick = useCallback(() => {
     if (activeTool === 'polyline' && tempPoints.length >= 4) {
-      onShapeAdd({
+      addShapeWithCoords({
         type: 'polyline',
         points: tempPoints,
         strokeColor,
@@ -400,7 +467,7 @@ export function DrawingCanvas({
       });
       setTempPoints([]);
     } else if (activeTool === 'polygon' && tempPoints.length >= 6) {
-      onShapeAdd({
+      addShapeWithCoords({
         type: 'polygon',
         points: tempPoints,
         strokeColor,
@@ -408,7 +475,7 @@ export function DrawingCanvas({
       });
       setTempPoints([]);
     }
-  }, [activeTool, tempPoints, strokeColor, strokeWidth, onShapeAdd]);
+  }, [activeTool, tempPoints, strokeColor, strokeWidth, addShapeWithCoords]);
 
   const handleShapeClick = useCallback(
     (id: string, e: any) => {
@@ -454,6 +521,44 @@ export function DrawingCanvas({
   };
 
   const renderShape = (shape: Shape, index: number) => {
+    const isPreview = shape.id === 'temp';
+    
+    let displayCoords = { x: 0, y: 0 };
+    let displayPoints: number[] = [];
+    let displayWidth = 0;
+    let displayHeight = 0;
+    let displayRadius = 0;
+
+    if (isPreview) {
+      if (shape.type === 'point' || shape.type === 'rectangle' || shape.type === 'circle') {
+        displayCoords = { x: shape.x, y: shape.y };
+      }
+      if (shape.type === 'line' || shape.type === 'polyline' || shape.type === 'polygon' || shape.type === 'rawline') {
+        displayPoints = shape.points;
+      }
+      if (shape.type === 'rectangle') {
+        displayWidth = shape.width;
+        displayHeight = shape.height;
+      }
+      if (shape.type === 'circle') {
+        displayRadius = shape.radius;
+      }
+    } else {
+      if (shape.type === 'point' || shape.type === 'rectangle' || shape.type === 'circle') {
+        displayCoords = toDisplayCoords(shape.x, shape.y);
+      }
+      if (shape.type === 'line' || shape.type === 'polyline' || shape.type === 'polygon' || shape.type === 'rawline') {
+        displayPoints = toDisplayPoints(shape.points);
+      }
+      if (shape.type === 'rectangle') {
+        displayWidth = shape.width * displayScaleX;
+        displayHeight = shape.height * displayScaleY;
+      }
+      if (shape.type === 'circle') {
+        displayRadius = shape.radius * ((displayScaleX + displayScaleY) / 2);
+      }
+    }
+
     const isSelected = shape.id === selectedId;
     const commonProps = {
       id: shape.id,
@@ -467,11 +572,11 @@ export function DrawingCanvas({
         const newAttrs: any = {};
         
         if (shape.type === 'point') {
-          newAttrs.x = e.target.x();
-          newAttrs.y = e.target.y();
+          newAttrs.x = Math.round(e.target.x() * scaleX);
+          newAttrs.y = Math.round(e.target.y() * scaleY);
         } else if (shape.type === 'line') {
-          const dx = e.target.x();
-          const dy = e.target.y();
+          const dx = e.target.x() * scaleX;
+          const dy = e.target.y() * scaleY;
           newAttrs.points = [
             shape.points[0] + dx,
             shape.points[1] + dy,
@@ -479,16 +584,16 @@ export function DrawingCanvas({
             shape.points[3] + dy,
           ];
         } else if (shape.type === 'rawline' || shape.type === 'polyline' || shape.type === 'polygon') {
-          const dx = e.target.x();
-          const dy = e.target.y();
+          const dx = e.target.x() * scaleX;
+          const dy = e.target.y() * scaleY;
           const newPoints = shape.points.map((p, i) => p + (i % 2 === 0 ? dx : dy));
           newAttrs.points = newPoints;
         } else if (shape.type === 'rectangle') {
-          newAttrs.x = e.target.x();
-          newAttrs.y = e.target.y();
+          newAttrs.x = Math.round(e.target.x() * scaleX);
+          newAttrs.y = Math.round(e.target.y() * scaleY);
         } else if (shape.type === 'circle') {
-          newAttrs.x = e.target.x();
-          newAttrs.y = e.target.y();
+          newAttrs.x = Math.round(e.target.x() * scaleX);
+          newAttrs.y = Math.round(e.target.y() * scaleY);
         }
         
         e.target.position({ x: 0, y: 0 });
@@ -502,8 +607,8 @@ export function DrawingCanvas({
           return (
             <Circle
               {...commonProps}
-              x={shape.x}
-              y={shape.y}
+              x={displayCoords.x}
+              y={displayCoords.y}
               radius={1}
               fill={shape.strokeColor}
             />
@@ -512,7 +617,7 @@ export function DrawingCanvas({
           return (
             <Line
               {...commonProps}
-              points={shape.points}
+              points={displayPoints}
               lineCap="round"
               lineJoin="round"
             />
@@ -521,7 +626,7 @@ export function DrawingCanvas({
           return (
             <Line
               {...commonProps}
-              points={shape.points}
+              points={displayPoints}
               lineCap="round"
               lineJoin="round"
               tension={0}
@@ -531,7 +636,7 @@ export function DrawingCanvas({
           return (
             <Line
               {...commonProps}
-              points={shape.points}
+              points={displayPoints}
               closed
               lineCap="round"
               lineJoin="round"
@@ -542,7 +647,7 @@ export function DrawingCanvas({
           return (
             <Line
               {...commonProps}
-              points={shape.points}
+              points={displayPoints}
               lineCap="round"
               lineJoin="round"
               tension={0.5}
@@ -552,10 +657,10 @@ export function DrawingCanvas({
           return (
             <Rect
               {...commonProps}
-              x={shape.x}
-              y={shape.y}
-              width={shape.width}
-              height={shape.height}
+              x={displayCoords.x}
+              y={displayCoords.y}
+              width={displayWidth}
+              height={displayHeight}
               fill={shape.strokeColor + '33'}
             />
           );
@@ -563,9 +668,9 @@ export function DrawingCanvas({
           return (
             <Circle
               {...commonProps}
-              x={shape.x}
-              y={shape.y}
-              radius={shape.radius}
+              x={displayCoords.x}
+              y={displayCoords.y}
+              radius={displayRadius}
               fill={shape.strokeColor + '33'}
             />
           );
@@ -575,6 +680,7 @@ export function DrawingCanvas({
     })();
 
     const center = getShapeCenter(shape);
+    const displayCenter = isPreview ? center : toDisplayCoords(center.x, center.y);
 
     return (
       <React.Fragment key={shape.id}>
@@ -582,8 +688,8 @@ export function DrawingCanvas({
         {/* Invisible larger hit area for easier selection */}
         {shape.type === 'point' && (
           <Circle
-            x={shape.x}
-            y={shape.y}
+            x={displayCoords.x}
+            y={displayCoords.y}
             radius={12}
             fill="transparent"
             onClick={(e) => handleShapeClick(shape.id, e)}
@@ -592,7 +698,7 @@ export function DrawingCanvas({
         )}
         {shape.type === 'line' && (
           <Line
-            points={shape.points}
+            points={displayPoints}
             stroke="transparent"
             strokeWidth={20}
             onClick={(e) => handleShapeClick(shape.id, e)}
@@ -600,8 +706,8 @@ export function DrawingCanvas({
           />
         )}
         <Text
-          x={center.x - 4}
-          y={shape.type === 'point' ? center.y - 18 : center.y - 5}
+          x={displayCenter.x - 4}
+          y={shape.type === 'point' ? displayCenter.y - 18 : displayCenter.y - 5}
           text={String(index + 1)}
           fontSize={10}
           fontFamily="Arial, sans-serif"

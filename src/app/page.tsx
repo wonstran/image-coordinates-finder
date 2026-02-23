@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Toolbar } from '@/components/Canvas/Toolbar';
 import { CoordinatesPanel } from '@/components/Canvas/CoordinatesPanel';
@@ -30,6 +30,7 @@ export default function Home() {
   const [showImageUpload, setShowImageUpload] = useState(true);
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   const [zoomScale, setZoomScale] = useState(1);
+  const stageRef = useRef<any>(null);
 
   const saveToHistory = useCallback((newShapes: Shape[]) => {
     setPast((prev) => [...prev, shapes]);
@@ -154,6 +155,7 @@ export default function Home() {
             shapes={shapes}
             imageWidth={imageWidth}
             imageHeight={imageHeight}
+            stageRef={stageRef}
           />
         </div>
       </header>
@@ -196,12 +198,15 @@ export default function Home() {
                     imageData={imageData}
                     imageWidth={Math.min(imageWidth, 1200)}
                     imageHeight={Math.min(imageHeight, 800)}
+                    originalImageWidth={imageWidth}
+                    originalImageHeight={imageHeight}
                     onShapeAdd={handleShapeAdd}
                     onShapeUpdate={handleShapeUpdate}
                     onShapeSelect={setSelectedId}
                     onMouseMove={setMousePos}
                     zoomScale={zoomScale}
                     onZoomChange={setZoomScale}
+                    onStageRef={(ref: any) => { stageRef.current = ref?.current; }}
                     labelColor={labelColor}
                   />
                 </div>
