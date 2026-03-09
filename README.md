@@ -27,7 +27,7 @@ npm run dev
 
 ## Deloyed Online Tool 
 
- Access [https://its.cutr.usf.edu/image](https://its.cutr.usf.edu/image)
+ Access [https://wonstran.github.io/image-coordinates-finder/](https://wonstran.github.io/image-coordinates-finder/)
 
 ## Usage
 
