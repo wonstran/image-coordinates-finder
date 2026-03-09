@@ -6,7 +6,7 @@ const nextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
-  basePath: ''
+  basePath: '/image-coordinates-finder'
 };
 
 module.exports = nextConfig;
