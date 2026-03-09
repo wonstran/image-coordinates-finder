@@ -8,9 +8,10 @@ interface CoordinatesPanelProps {
   shapes: Shape[];
   selectedId: string | null;
   onSelectShape: (id: string | null) => void;
+  onDeleteShape?: (id: string) => void;
 }
 
-export function CoordinatesPanel({ shapes, selectedId, onSelectShape }: CoordinatesPanelProps) {
+export function CoordinatesPanel({ shapes, selectedId, onSelectShape, onDeleteShape }: CoordinatesPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [viewMode, setViewMode] = useState<'json' | 'list'>('json');
 
@@ -99,9 +100,24 @@ export function CoordinatesPanel({ shapes, selectedId, onSelectShape }: Coordina
                       <span className="text-[10px] font-medium text-blue-400 uppercase">
                         {shape.type}
                       </span>
+                        {shape.type}
                     </div>
-                    <div className="text-[10px] font-mono text-gray-400 mt-1">
-                      {formatCoordinates(shape)}
+                    <div className="flex items-center justify-between mt-1">
+                      <div className="text-[10px] font-mono text-gray-400">
+                        {formatCoordinates(shape)}
+                      </div>
+                      {onDeleteShape && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteShape(shape.id);
+                          }}
+                          className="text-red-400 hover:text-red-300 text-xs px-1"
+                          title="Delete"
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { DrawingTool } from '@/types/shape';
-import { TwitterPicker } from 'react-color';
 
 interface ToolbarProps {
   activeTool: DrawingTool;
@@ -25,6 +24,13 @@ interface ToolbarProps {
   coordY?: string;
   onCoordYChange?: (y: string) => void;
   onAddPointByCoord?: () => void;
+  relativeCoordInputMode?: boolean;
+  onRelativeCoordInputModeChange?: (mode: boolean) => void;
+  relativeX?: string;
+  onRelativeXChange?: (x: string) => void;
+  relativeY?: string;
+  onRelativeYChange?: (y: string) => void;
+  onAddPointByRelativeCoord?: () => void;
 }
 
 const tools: { type: DrawingTool; label: string; icon: string }[] = [
@@ -59,9 +65,14 @@ export function Toolbar({
   coordY = '',
   onCoordYChange,
   onAddPointByCoord,
+  relativeCoordInputMode = false,
+  onRelativeCoordInputModeChange,
+  relativeX = '',
+  onRelativeXChange,
+  relativeY = '',
+  onRelativeYChange,
+  onAddPointByRelativeCoord,
 }: ToolbarProps) {
-  const [showColorPicker, setShowColorPicker] = React.useState(false);
-
   const colors = [
     '#3B82F6', '#EF4444', '#10B981', '#F59E0B',
     '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6',
@@ -89,7 +100,7 @@ export function Toolbar({
           ))}
         </div>
         
-        {/* Coordinate Input */}
+        {/* Absolute Coordinate Input */}
         <button
           onClick={() => onCoordInputModeChange?.(!coordInputMode)}
           className={`mt-2 w-full py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-200 ${
@@ -129,6 +140,54 @@ export function Toolbar({
             <button
               onClick={onAddPointByCoord}
               className="w-full py-2 bg-blue-500 text-white rounded text-sm font-semibold hover:bg-blue-600"
+            >
+              Add Point
+            </button>
+          </div>
+        )}
+        
+        {/* Relative Coordinate Input */}
+        <button
+          onClick={() => onRelativeCoordInputModeChange?.(!relativeCoordInputMode)}
+          className={`mt-2 w-full py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+            relativeCoordInputMode
+              ? 'bg-green-500 text-white shadow-lg shadow-green-500/20'
+              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200/60'
+          }`}
+        >
+          <span className="block text-base mb-0.5">📊</span>
+          Relative X,Y (0-1)
+        </button>
+        {relativeCoordInputMode && (
+          <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-300">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs text-green-700 font-semibold">X:</span>
+              <input
+                type="number"
+                step="0.01"
+                value={relativeX}
+                onChange={(e) => onRelativeXChange?.(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && onAddPointByRelativeCoord?.()}
+                placeholder="0-1"
+                className="w-20 px-2 py-2 text-sm border border-green-300 rounded font-mono bg-white"
+                autoFocus
+              />
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs text-green-700 font-semibold">Y:</span>
+              <input
+                type="number"
+                step="0.01"
+                value={relativeY}
+                onChange={(e) => onRelativeYChange?.(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && onAddPointByRelativeCoord?.()}
+                placeholder="0-1"
+                className="w-20 px-2 py-2 text-sm border border-green-300 rounded font-mono bg-white"
+              />
+            </div>
+            <button
+              onClick={onAddPointByRelativeCoord}
+              className="w-full py-2 bg-green-500 text-white rounded text-sm font-semibold hover:bg-green-600"
             >
               Add Point
             </button>
