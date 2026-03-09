@@ -28,6 +28,9 @@ export default function Home() {
   const [imageHeight, setImageHeight] = useState(600);
   const [imageData, setImageData] = useState<string | null>(null);
   const [showImageUpload, setShowImageUpload] = useState(true);
+  const [coordInputMode, setCoordInputMode] = useState(false);
+  const [coordX, setCoordX] = useState('');
+  const [coordY, setCoordY] = useState('');
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   const [zoomScale, setZoomScale] = useState(1);
   const stageRef = useRef<any>(null);
@@ -63,7 +66,6 @@ export default function Home() {
   }, [selectedId, shapes, saveToHistory]);
 
   const handleSelectAll = useCallback(() => {
-    // For now, select first shape if exists
     if (shapes.length > 0 && !selectedId) {
       setSelectedId(shapes[0].id);
     }
@@ -93,6 +95,23 @@ export default function Home() {
     const newShape = { ...shape, id: uuidv4() } as Shape;
     saveToHistory([...shapes, newShape]);
   }, [shapes, saveToHistory]);
+
+  const handleAddPointByCoord = useCallback(() => {
+    const x = parseFloat(coordX);
+    const y = parseFloat(coordY);
+    if (!isNaN(x) && !isNaN(y)) {
+      handleShapeAdd({
+        type: 'point',
+        x,
+        y,
+        strokeColor,
+        strokeWidth,
+      } as Omit<Shape, 'id'>);
+      setCoordX('');
+      setCoordY('');
+      setCoordInputMode(false);
+    }
+  }, [coordX, coordY, strokeColor, strokeWidth, handleShapeAdd]);
 
   const handleShapeUpdate = useCallback((id: string, updates: Partial<Shape>) => {
     const newShapes = shapes.map((s) => (s.id === id ? { ...s, ...updates } : s)) as Shape[];
@@ -139,11 +158,14 @@ export default function Home() {
               <circle cx="17" cy="17" r="1.5" fill="#93C5FD"/>
             </svg>
           </div>
-          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Image Coordinates Finder <span className="text-gray-400 text-lg">ver. 0.2</span></h1>
+          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Image Coordinates Finder <span className="text-gray-400 text-lg">ver. 0.3</span></h1>
         </div>
+        
+        {/* Mouse position display */}
         <div className="absolute left-1/2 transform -translate-x-1/2 bg-white/90 px-4 py-1 text-sm border border-gray-300 rounded font-mono">
           X: {mousePos ? Math.round(mousePos.x) : 0} &nbsp; Y: {mousePos ? Math.round(mousePos.y) : 0}
         </div>
+        
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowImageUpload(true)}
@@ -177,6 +199,13 @@ export default function Home() {
           canUndo={past.length > 0}
           canRedo={future.length > 0}
           onClear={handleClear}
+          coordInputMode={coordInputMode}
+          onCoordInputModeChange={setCoordInputMode}
+          coordX={coordX}
+          onCoordXChange={setCoordX}
+          coordY={coordY}
+          onCoordYChange={setCoordY}
+          onAddPointByCoord={handleAddPointByCoord}
         />
 
         {/* Canvas Area */}

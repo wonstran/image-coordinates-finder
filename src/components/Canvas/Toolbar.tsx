@@ -18,6 +18,13 @@ interface ToolbarProps {
   canUndo: boolean;
   canRedo: boolean;
   onClear: () => void;
+  coordInputMode?: boolean;
+  onCoordInputModeChange?: (mode: boolean) => void;
+  coordX?: string;
+  onCoordXChange?: (x: string) => void;
+  coordY?: string;
+  onCoordYChange?: (y: string) => void;
+  onAddPointByCoord?: () => void;
 }
 
 const tools: { type: DrawingTool; label: string; icon: string }[] = [
@@ -45,6 +52,13 @@ export function Toolbar({
   canUndo,
   canRedo,
   onClear,
+  coordInputMode = false,
+  onCoordInputModeChange,
+  coordX = '',
+  onCoordXChange,
+  coordY = '',
+  onCoordYChange,
+  onAddPointByCoord,
 }: ToolbarProps) {
   const [showColorPicker, setShowColorPicker] = React.useState(false);
 
@@ -74,6 +88,52 @@ export function Toolbar({
             </button>
           ))}
         </div>
+        
+        {/* Coordinate Input */}
+        <button
+          onClick={() => onCoordInputModeChange?.(!coordInputMode)}
+          className={`mt-2 w-full py-2.5 px-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+            coordInputMode
+              ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200/60'
+          }`}
+        >
+          <span className="block text-base mb-0.5">🔢</span>
+          Input X,Y
+        </button>
+        {coordInputMode && (
+          <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-300">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs text-blue-700 font-semibold">X:</span>
+              <input
+                type="number"
+                value={coordX}
+                onChange={(e) => onCoordXChange?.(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && onAddPointByCoord?.()}
+                placeholder="0"
+                className="w-16 px-2 py-2 text-sm border border-blue-300 rounded font-mono bg-white"
+                autoFocus
+              />
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs text-blue-700 font-semibold">Y:</span>
+              <input
+                type="number"
+                value={coordY}
+                onChange={(e) => onCoordYChange?.(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && onAddPointByCoord?.()}
+                placeholder="0"
+                className="w-16 px-2 py-2 text-sm border border-blue-300 rounded font-mono bg-white"
+              />
+            </div>
+            <button
+              onClick={onAddPointByCoord}
+              className="w-full py-2 bg-blue-500 text-white rounded text-sm font-semibold hover:bg-blue-600"
+            >
+              Add Point
+            </button>
+          </div>
+        )}
       </div>
 
       <div>
