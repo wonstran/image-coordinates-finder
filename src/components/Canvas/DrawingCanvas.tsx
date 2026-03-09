@@ -609,6 +609,17 @@ export function DrawingCanvas({
               {...commonProps}
               x={displayCoords.x}
               y={displayCoords.y}
+              radius={3}
+              fill={shape.strokeColor}
+              stroke="white"
+              strokeWidth={1}
+            />
+          );
+          return (
+            <Circle
+              {...commonProps}
+              x={displayCoords.x}
+              y={displayCoords.y}
               radius={1}
               fill={shape.strokeColor}
             />
