@@ -260,9 +260,9 @@ export default function Home() {
                   <button
                     onClick={() => setZoomScale(1)}
                     className="w-8 h-8 bg-white border border-gray-300 rounded hover:bg-gray-100 flex items-center justify-center text-xs font-bold"
-                    title="Reset to 100%"
+                    title="Reset to Fit"
                   >
-                    100%
+                    Fit
                   </button>
                   <button
                     onClick={() => setZoomScale(prev => Math.min(5, prev * 1.2))}
