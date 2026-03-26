@@ -172,7 +172,7 @@ export default function Home() {
               <circle cx="17" cy="17" r="1.5" fill="#93C5FD"/>
             </svg>
           </div>
-          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Image Coordinates Finder <span className="text-gray-400 text-lg">ver. 0.3</span></h1>
+          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Image Coordinates Finder <span className="text-gray-400 text-lg">ver. 0.4</span></h1>
         </div>
         
         <div className="absolute left-1/2 transform -translate-x-1/2 bg-white/90 px-4 py-1 text-sm border border-gray-300 rounded font-mono">
@@ -180,6 +180,26 @@ export default function Home() {
         </div>
         
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              if (shapes.length > 0) {
+                if (confirm('You may have unsaved data. Please make sure the coordinates have been saved.')) {
+                  setImageData(null);
+                  setShapes([]);
+                  setPast([]);
+                  setFuture([]);
+                  setSelectedId(null);
+                  setShowImageUpload(true);
+                }
+              } else {
+                setImageData(null);
+                setShowImageUpload(true);
+              }
+            }}
+            className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors font-medium"
+          >
+            New
+          </button>
           <button
             onClick={() => setShowImageUpload(true)}
             className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors font-medium"
